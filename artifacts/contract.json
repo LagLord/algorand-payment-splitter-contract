@@ -1,0 +1,85 @@
+{
+  "name": "split-contract",
+  "methods": [
+    {
+      "name": "fund",
+      "args": [
+        {
+          "type": "pay",
+          "name": "payment"
+        },
+        {
+          "type": "account",
+          "name": "address1"
+        },
+        {
+          "type": "account",
+          "name": "address2"
+        },
+        {
+          "type": "account",
+          "name": "address3"
+        },
+        {
+          "type": "uint64",
+          "name": "percentage1"
+        },
+        {
+          "type": "uint64",
+          "name": "percentage2"
+        },
+        {
+          "type": "uint64",
+          "name": "percentage3"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
+      "name": "fund_asset",
+      "args": [
+        {
+          "type": "axfer",
+          "name": "payment"
+        },
+        {
+          "type": "account",
+          "name": "address1"
+        },
+        {
+          "type": "account",
+          "name": "address2"
+        },
+        {
+          "type": "account",
+          "name": "address3"
+        },
+        {
+          "type": "uint64",
+          "name": "percentage1"
+        },
+        {
+          "type": "uint64",
+          "name": "percentage2"
+        },
+        {
+          "type": "uint64",
+          "name": "percentage3"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
+      "name": "get_funder",
+      "args": [],
+      "returns": {
+        "type": "address"
+      }
+    }
+  ],
+  "networks": {}
+}

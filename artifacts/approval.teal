@@ -1,0 +1,341 @@
+#pragma version 8
+txn NumAppArgs
+int 0
+==
+bnz main_l8
+txna ApplicationArgs 0
+method "fund(pay,account,account,account,uint64,uint64,uint64)void"
+==
+bnz main_l7
+txna ApplicationArgs 0
+method "fund_asset(axfer,account,account,account,uint64,uint64,uint64)void"
+==
+bnz main_l6
+txna ApplicationArgs 0
+method "get_funder()address"
+==
+bnz main_l5
+err
+main_l5:
+txn OnCompletion
+int NoOp
+==
+txn ApplicationID
+int 0
+!=
+&&
+assert
+callsub getfundercaster_5
+int 1
+return
+main_l6:
+txn OnCompletion
+int NoOp
+==
+txn ApplicationID
+int 0
+!=
+&&
+assert
+callsub fundassetcaster_4
+int 1
+return
+main_l7:
+txn OnCompletion
+int NoOp
+==
+txn ApplicationID
+int 0
+!=
+&&
+assert
+callsub fundcaster_3
+int 1
+return
+main_l8:
+txn OnCompletion
+int NoOp
+==
+bnz main_l10
+err
+main_l10:
+txn ApplicationID
+int 0
+==
+assert
+int 1
+return
+
+// fund
+fund_0:
+proto 7 0
+int 0
+dup
+frame_dig -7
+gtxns Amount
+int 100
+/
+frame_bury 0
+frame_dig -7
+gtxns Receiver
+balance
+frame_dig -7
+gtxns Amount
+-
+frame_bury 1
+frame_dig 1
+int 120000
+<
+bz fund_0_l2
+frame_dig 0
+int 1200
+-
+frame_bury 0
+fund_0_l2:
+frame_dig -7
+gtxns Receiver
+global CurrentApplicationAddress
+==
+assert
+frame_dig -7
+gtxns Amount
+int 1000000
+>=
+assert
+frame_dig -3
+frame_dig -2
++
+frame_dig -1
++
+int 100
+==
+assert
+itxn_begin
+int pay
+itxn_field TypeEnum
+frame_dig 0
+frame_dig -3
+*
+itxn_field Amount
+frame_dig -6
+txnas Accounts
+itxn_field Receiver
+itxn_submit
+itxn_begin
+int pay
+itxn_field TypeEnum
+frame_dig 0
+frame_dig -2
+*
+itxn_field Amount
+frame_dig -5
+txnas Accounts
+itxn_field Receiver
+itxn_submit
+itxn_begin
+int pay
+itxn_field TypeEnum
+frame_dig 0
+frame_dig -1
+*
+itxn_field Amount
+frame_dig -4
+txnas Accounts
+itxn_field Receiver
+itxn_submit
+byte "funder"
+frame_dig -7
+gtxns Sender
+app_global_put
+retsub
+
+// fund_asset
+fundasset_1:
+proto 7 0
+int 0
+frame_dig -7
+gtxns AssetAmount
+int 100
+/
+frame_bury 0
+frame_dig -7
+gtxns Receiver
+global CurrentApplicationAddress
+==
+assert
+frame_dig -7
+gtxns AssetAmount
+int 0
+>
+assert
+frame_dig -3
+frame_dig -2
++
+frame_dig -1
++
+int 100
+==
+assert
+itxn_begin
+int axfer
+itxn_field TypeEnum
+frame_dig 0
+frame_dig -3
+*
+itxn_field Amount
+frame_dig -6
+txnas Accounts
+itxn_field Receiver
+frame_dig -7
+gtxns XferAsset
+itxn_field XferAsset
+itxn_submit
+itxn_begin
+int axfer
+itxn_field TypeEnum
+frame_dig 0
+frame_dig -2
+*
+itxn_field Amount
+frame_dig -5
+txnas Accounts
+itxn_field Receiver
+frame_dig -7
+gtxns XferAsset
+itxn_field XferAsset
+itxn_submit
+itxn_begin
+int axfer
+itxn_field TypeEnum
+frame_dig 0
+frame_dig -1
+*
+itxn_field Amount
+frame_dig -4
+txnas Accounts
+itxn_field Receiver
+frame_dig -7
+gtxns XferAsset
+itxn_field XferAsset
+itxn_submit
+byte "funder"
+frame_dig -7
+gtxns Sender
+app_global_put
+retsub
+
+// get_funder
+getfunder_2:
+proto 0 1
+byte ""
+byte "funder"
+app_global_get
+frame_bury 0
+frame_dig 0
+len
+int 32
+==
+assert
+retsub
+
+// fund_caster
+fundcaster_3:
+proto 0 0
+int 0
+dupn 6
+txna ApplicationArgs 1
+int 0
+getbyte
+frame_bury 1
+txna ApplicationArgs 2
+int 0
+getbyte
+frame_bury 2
+txna ApplicationArgs 3
+int 0
+getbyte
+frame_bury 3
+txna ApplicationArgs 4
+btoi
+frame_bury 4
+txna ApplicationArgs 5
+btoi
+frame_bury 5
+txna ApplicationArgs 6
+btoi
+frame_bury 6
+txn GroupIndex
+int 1
+-
+frame_bury 0
+frame_dig 0
+gtxns TypeEnum
+int pay
+==
+assert
+frame_dig 0
+frame_dig 1
+frame_dig 2
+frame_dig 3
+frame_dig 4
+frame_dig 5
+frame_dig 6
+callsub fund_0
+retsub
+
+// fund_asset_caster
+fundassetcaster_4:
+proto 0 0
+int 0
+dupn 6
+txna ApplicationArgs 1
+int 0
+getbyte
+frame_bury 1
+txna ApplicationArgs 2
+int 0
+getbyte
+frame_bury 2
+txna ApplicationArgs 3
+int 0
+getbyte
+frame_bury 3
+txna ApplicationArgs 4
+btoi
+frame_bury 4
+txna ApplicationArgs 5
+btoi
+frame_bury 5
+txna ApplicationArgs 6
+btoi
+frame_bury 6
+txn GroupIndex
+int 1
+-
+frame_bury 0
+frame_dig 0
+gtxns TypeEnum
+int axfer
+==
+assert
+frame_dig 0
+frame_dig 1
+frame_dig 2
+frame_dig 3
+frame_dig 4
+frame_dig 5
+frame_dig 6
+callsub fundasset_1
+retsub
+
+// get_funder_caster
+getfundercaster_5:
+proto 0 0
+byte ""
+callsub getfunder_2
+frame_bury 0
+byte 0x151f7c75
+frame_dig 0
+concat
+log
+retsub

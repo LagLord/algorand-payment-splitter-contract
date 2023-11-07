@@ -1,0 +1,116 @@
+from pyteal import *
+import os
+import json
+
+"""
+Simple Payment splitter application that does the following:
+- accepts funding >= 1 ALGO, takes 3 wallet addresses and records the funder
+- split it into those 3 based on the percentages provided 
+- retrieve who the funder is
+"""
+
+router = Router(
+    "split-contract",
+    BareCallActions(
+        no_op=OnCompleteAction.create_only(Approve()),
+    ),
+)
+
+PAYMENT_AMT = Int(1000000)  # 1 million microAlgos = 1 Algo
+
+
+@router.method
+def fund(payment: abi.PaymentTransaction,
+         address1: abi.Account, address2: abi.Account, address3: abi.Account,
+         percentage1: abi.Uint64, percentage2: abi.Uint64, percentage3: abi.Uint64):
+    return Seq(
+        (amt := abi.Uint64()).set(payment.get().amount() / Int(100)),
+        (bal := abi.Uint64()).set(Balance(payment.get().receiver()) - payment.get().amount()),
+        If(bal.get() < Int(120000), amt.set(amt.get() - Int(1200))),
+        Assert(payment.get().receiver() == Global.current_application_address()),
+        Assert(payment.get().amount() >= PAYMENT_AMT),
+        Assert((percentage1.get() + percentage2.get() + percentage3.get()) == Int(100)),
+        InnerTxnBuilder.Execute(
+            {
+                TxnField.type_enum: TxnType.Payment,
+                TxnField.amount: amt.get() * percentage1.get(),
+                TxnField.receiver: address1.address(),
+            }
+        ),
+        InnerTxnBuilder.Execute(
+            {
+                TxnField.type_enum: TxnType.Payment,
+                TxnField.amount: amt.get() * percentage2.get(),
+                TxnField.receiver: address2.address(),
+            }
+        ),
+        InnerTxnBuilder.Execute(
+            {
+                TxnField.type_enum: TxnType.Payment,
+                TxnField.amount: amt.get() * percentage3.get(),
+                TxnField.receiver: address3.address(),
+            }
+        ),
+        App.globalPut(Bytes("funder"), payment.get().sender()),
+    )
+
+
+@router.method
+def fund_asset(payment: abi.AssetTransferTransaction,
+         address1: abi.Account, address2: abi.Account, address3: abi.Account,
+         percentage1: abi.Uint64, percentage2: abi.Uint64, percentage3: abi.Uint64):
+    return Seq(
+        (amt := abi.Uint64()).set(payment.get().asset_amount() / Int(100)),  # Calculate the amount for each recipient
+        Assert(payment.get().receiver() == Global.current_application_address()),  # Ensure the receiver is the contract itself
+        Assert(payment.get().asset_amount() > Int(0)),  # Ensure the transferred asset amount is greater than 0
+        Assert((percentage1.get() + percentage2.get() + percentage3.get()) == Int(100)),  # Ensure percentages sum to 100
+
+        # Execute asset transfers to the specified addresses based on the provided percentages
+        InnerTxnBuilder.Execute(
+            {
+                TxnField.type_enum: TxnType.AssetTransfer,
+                TxnField.amount: amt.get() * percentage1.get(),
+                TxnField.receiver: address1.address(),
+                TxnField.xfer_asset: payment.get().xfer_asset()
+            }
+        ),
+        InnerTxnBuilder.Execute(
+            {
+                TxnField.type_enum: TxnType.AssetTransfer,
+                TxnField.amount: amt.get() * percentage2.get(),
+                TxnField.receiver: address2.address(),
+                TxnField.xfer_asset: payment.get().xfer_asset()
+            }
+        ),
+        InnerTxnBuilder.Execute(
+            {
+                TxnField.type_enum: TxnType.AssetTransfer,
+                TxnField.amount: amt.get() * percentage3.get(),
+                TxnField.receiver: address3.address(),
+                TxnField.xfer_asset: payment.get().xfer_asset()
+            }
+        ),
+
+        App.globalPut(Bytes("funder"), payment.get().sender())  # Store the sender's address in global state
+    )
+
+
+@router.method
+def get_funder(*, output: abi.Address):
+    return output.set(App.globalGet(Bytes("funder")))
+
+
+if __name__ == "__main__":
+    path = os.path.dirname(os.path.abspath(__file__))
+    approval, clear, contract = router.compile_program(version=8)
+
+    # Dump out the contract as json that can be read in by any of the SDKs
+    with open(os.path.join(path, "artifacts/contract.json"), "w") as f:
+        f.write(json.dumps(contract.dictify(), indent=2))
+
+    # Write out the approval and clear programs
+    with open(os.path.join(path, "artifacts/approval.teal"), "w") as f:
+        f.write(approval)
+
+    with open(os.path.join(path, "artifacts/clear.teal"), "w") as f:
+        f.write(clear)
