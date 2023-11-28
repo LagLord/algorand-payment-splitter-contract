@@ -38,6 +38,18 @@
       }
     },
     {
+      "name": "optin_asset",
+      "args": [
+        {
+          "type": "asset",
+          "name": "asset_id"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
       "name": "fund_asset",
       "args": [
         {

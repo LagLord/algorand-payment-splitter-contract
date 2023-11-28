@@ -2,32 +2,24 @@
 txn NumAppArgs
 int 0
 ==
-bnz main_l8
+bnz main_l10
 txna ApplicationArgs 0
 method "fund(pay,account,account,account,uint64,uint64,uint64)void"
 ==
-bnz main_l7
+bnz main_l9
+txna ApplicationArgs 0
+method "optin_asset(asset)void"
+==
+bnz main_l8
 txna ApplicationArgs 0
 method "fund_asset(axfer,account,account,account,uint64,uint64,uint64)void"
 ==
-bnz main_l6
+bnz main_l7
 txna ApplicationArgs 0
 method "get_funder()address"
 ==
-bnz main_l5
+bnz main_l6
 err
-main_l5:
-txn OnCompletion
-int NoOp
-==
-txn ApplicationID
-int 0
-!=
-&&
-assert
-callsub getfundercaster_5
-int 1
-return
 main_l6:
 txn OnCompletion
 int NoOp
@@ -37,7 +29,7 @@ int 0
 !=
 &&
 assert
-callsub fundassetcaster_4
+callsub getfundercaster_9
 int 1
 return
 main_l7:
@@ -49,16 +41,51 @@ int 0
 !=
 &&
 assert
-callsub fundcaster_3
+callsub fundassetcaster_8
 int 1
 return
 main_l8:
 txn OnCompletion
 int NoOp
 ==
-bnz main_l10
-err
+txn ApplicationID
+int 0
+!=
+&&
+assert
+callsub optinassetcaster_7
+int 1
+return
+main_l9:
+txn OnCompletion
+int NoOp
+==
+txn ApplicationID
+int 0
+!=
+&&
+assert
+callsub fundcaster_6
+int 1
+return
 main_l10:
+txn OnCompletion
+int NoOp
+==
+bnz main_l14
+txn OnCompletion
+int OptIn
+==
+bnz main_l13
+err
+main_l13:
+txn ApplicationID
+int 0
+!=
+assert
+int 1
+return
+main_l14:
 txn ApplicationID
 int 0
 ==
@@ -66,8 +93,43 @@ assert
 int 1
 return
 
+// opt_in_smart_contract_to_asa
+optinsmartcontracttoasa_0:
+proto 1 0
+itxn_begin
+int axfer
+itxn_field TypeEnum
+frame_dig -1
+itxn_field XferAsset
+int 0
+itxn_field AssetAmount
+global CurrentApplicationAddress
+itxn_field Sender
+global CurrentApplicationAddress
+itxn_field AssetReceiver
+itxn_submit
+retsub
+
+// opt_in_transaction
+optintransaction_1:
+proto 1 0
+global CurrentApplicationAddress
+frame_dig -1
+txnas Assets
+asset_holding_get AssetBalance
+store 1
+store 0
+load 1
+!
+bz optintransaction_1_l2
+frame_dig -1
+txnas Assets
+callsub optinsmartcontracttoasa_0
+optintransaction_1_l2:
+retsub
+
 // fund
-fund_0:
+fund_2:
 proto 7 0
 int 0
 dup
@@ -86,12 +148,12 @@ frame_bury 1
 frame_dig 1
 int 120000
 <
-bz fund_0_l2
+bz fund_2_l2
 frame_dig 0
 int 1200
 -
 frame_bury 0
-fund_0_l2:
+fund_2_l2:
 frame_dig -7
 gtxns Receiver
 global CurrentApplicationAddress
@@ -149,8 +211,15 @@ gtxns Sender
 app_global_put
 retsub
 
+// optin_asset
+optinasset_3:
+proto 1 0
+frame_dig -1
+callsub optintransaction_1
+retsub
+
 // fund_asset
-fundasset_1:
+fundasset_4:
 proto 7 0
 int 0
 frame_dig -7
@@ -159,7 +228,7 @@ int 100
 /
 frame_bury 0
 frame_dig -7
-gtxns Receiver
+gtxns AssetReceiver
 global CurrentApplicationAddress
 ==
 assert
@@ -182,12 +251,12 @@ itxn_field TypeEnum
 frame_dig 0
 frame_dig -3
 *
-itxn_field Amount
+itxn_field AssetAmount
 frame_dig -6
 txnas Accounts
-itxn_field Receiver
+itxn_field AssetReceiver
 frame_dig -7
-gtxns XferAsset
+gtxnsa Assets 0
 itxn_field XferAsset
 itxn_submit
 itxn_begin
@@ -196,12 +265,12 @@ itxn_field TypeEnum
 frame_dig 0
 frame_dig -2
 *
-itxn_field Amount
+itxn_field AssetAmount
 frame_dig -5
 txnas Accounts
-itxn_field Receiver
+itxn_field AssetReceiver
 frame_dig -7
-gtxns XferAsset
+gtxnsa Assets 0
 itxn_field XferAsset
 itxn_submit
 itxn_begin
@@ -210,12 +279,12 @@ itxn_field TypeEnum
 frame_dig 0
 frame_dig -1
 *
-itxn_field Amount
+itxn_field AssetAmount
 frame_dig -4
 txnas Accounts
-itxn_field Receiver
+itxn_field AssetReceiver
 frame_dig -7
-gtxns XferAsset
+gtxnsa Assets 0
 itxn_field XferAsset
 itxn_submit
 byte "funder"
@@ -225,7 +294,7 @@ app_global_put
 retsub
 
 // get_funder
-getfunder_2:
+getfunder_5:
 proto 0 1
 byte ""
 byte "funder"
@@ -239,7 +308,7 @@ assert
 retsub
 
 // fund_caster
-fundcaster_3:
+fundcaster_6:
 proto 0 0
 int 0
 dupn 6
@@ -280,11 +349,23 @@ frame_dig 3
 frame_dig 4
 frame_dig 5
 frame_dig 6
-callsub fund_0
+callsub fund_2
+retsub
+
+// optin_asset_caster
+optinassetcaster_7:
+proto 0 0
+int 0
+txna ApplicationArgs 1
+int 0
+getbyte
+frame_bury 0
+frame_dig 0
+callsub optinasset_3
 retsub
 
 // fund_asset_caster
-fundassetcaster_4:
+fundassetcaster_8:
 proto 0 0
 int 0
 dupn 6
@@ -325,14 +406,14 @@ frame_dig 3
 frame_dig 4
 frame_dig 5
 frame_dig 6
-callsub fundasset_1
+callsub fundasset_4
 retsub
 
 // get_funder_caster
-getfundercaster_5:
+getfundercaster_9:
 proto 0 0
 byte ""
-callsub getfunder_2
+callsub getfunder_5
 frame_bury 0
 byte 0x151f7c75
 frame_dig 0
